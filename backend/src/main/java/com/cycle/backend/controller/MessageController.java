@@ -33,11 +33,15 @@ public class MessageController {
     
     @GetMapping("/messages/{id}")
     public ResponseEntity<Message> getMessageById(@PathVariable Long id) {
-        Message message = messageService.getMessageById(id);
-        if (message != null) {
-            return ResponseEntity.ok(message);
-        }
-        return ResponseEntity.notFound().build();
+        return messageService.getMessageById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @DeleteMapping("/messages/{id}")
+    public ResponseEntity<Void> deleteMessage(@PathVariable Long id) {
+        messageService.deleteMessage(id);
+        return ResponseEntity.noContent().build();
     }
     
     @GetMapping("/health")
