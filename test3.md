@@ -513,3 +513,322 @@ docker-compose ps
 docker-compose restart
 docker-compose restart backend
 ```
+
+---
+
+# Spring Boot 실무 필수 Annotation 정리
+
+이 프로젝트(backend)에서 사용된 annotation들 중 실무에서 자주 사용되는 것들을 정리합니다.
+
+---
+
+## 1. Spring Core Annotation
+
+### @SpringBootApplication
+Spring Boot 애플리케이션의 시작점. `@Configuration`, `@EnableAutoConfiguration`, `@ComponentScan`을 합친 것.
+
+```java
+@SpringBootApplication
+public class BackendApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(BackendApplication.class, args);
+    }
+}
+```
+
+### @Configuration
+설정 클래스임을 명시. `@Bean` 메서드를 포함하는 클래스에 사용.
+
+```java
+@Configuration
+public class CorsConfig {
+    @Bean
+    public CorsFilter corsFilter() {
+        // Bean 설정 로직
+    }
+}
+```
+
+### @Bean
+메서드의 반환 객체를 Spring Bean으로 등록.
+
+```java
+@Bean
+public CorsFilter corsFilter() {
+    return new CorsFilter(source);
+}
+```
+
+---
+
+## 2. Controller Annotation
+
+### @RestController
+`@Controller` + `@ResponseBody`. REST API용 컨트롤러에 사용.
+
+```java
+@RestController
+@RequestMapping("/api")
+public class MessageController {
+    // ...
+}
+```
+
+### @RequestMapping
+URL 경로를 클래스/메서드에 매핑.
+
+```java
+@RequestMapping("/api")  // 클래스 레벨: 기본 경로
+public class MessageController { }
+```
+
+### @GetMapping / @PostMapping / @DeleteMapping / @PutMapping
+HTTP 메서드별 매핑 (축약형).
+
+```java
+@GetMapping("/messages")
+public ResponseEntity<List<Message>> getAllMessages() { }
+
+@PostMapping("/messages")
+public ResponseEntity<Message> createMessage(@RequestBody MessageRequest request) { }
+
+@DeleteMapping("/messages/{id}")
+public ResponseEntity<Void> deleteMessage(@PathVariable Long id) { }
+```
+
+### @PathVariable
+URL 경로의 변수를 파라미터로 바인딩.
+
+```java
+@GetMapping("/messages/{id}")
+public ResponseEntity<Message> getMessageById(@PathVariable Long id) { }
+```
+
+### @RequestBody
+HTTP 요청 본문(JSON)을 객체로 변환.
+
+```java
+@PostMapping("/messages")
+public ResponseEntity<Message> createMessage(@RequestBody MessageRequest request) { }
+```
+
+### @CrossOrigin
+CORS 허용 설정.
+
+```java
+@CrossOrigin(origins = "*")  // 모든 도메인 허용
+@CrossOrigin(origins = "http://localhost:3000")  // 특정 도메인만 허용
+```
+
+---
+
+## 3. Service / Repository Annotation
+
+### @Service
+비즈니스 로직을 담당하는 서비스 클래스에 사용.
+
+```java
+@Service
+public class MessageService {
+    // 비즈니스 로직
+}
+```
+
+### @Repository
+데이터 접근 계층(DAO)에 사용. 예외 변환 기능 포함.
+
+```java
+@Repository
+public interface MessageRepository extends JpaRepository<Message, Long> { }
+```
+
+### @Autowired
+의존성 자동 주입. (필드, 생성자, setter에 사용 가능)
+
+```java
+@Autowired
+private MessageService messageService;
+
+// 권장: 생성자 주입 (테스트 용이)
+private final MessageService messageService;
+
+public MessageController(MessageService messageService) {
+    this.messageService = messageService;  // @Autowired 생략 가능
+}
+```
+
+### @Transactional
+트랜잭션 처리. 메서드/클래스 레벨에 적용.
+
+```java
+@Service
+@Transactional  // 클래스의 모든 메서드에 적용
+public class MessageService {
+
+    @Transactional(readOnly = true)  // 읽기 전용 (성능 최적화)
+    public List<Message> getAllMessages() { }
+}
+```
+
+---
+
+## 4. JPA Entity Annotation
+
+### @Entity
+JPA 엔티티(테이블 매핑 객체)임을 명시.
+
+```java
+@Entity
+public class Message { }
+```
+
+### @Table
+테이블명 지정. 생략시 클래스명이 테이블명.
+
+```java
+@Entity
+@Table(name = "messages")
+public class Message { }
+```
+
+### @Id & @GeneratedValue
+Primary Key 지정 및 자동 생성 전략.
+
+```java
+@Id
+@GeneratedValue(strategy = GenerationType.IDENTITY)  // MySQL auto_increment
+private Long id;
+
+// 다른 전략들:
+// GenerationType.AUTO - DB에 맞게 자동 선택
+// GenerationType.SEQUENCE - 시퀀스 사용 (Oracle, PostgreSQL)
+// GenerationType.TABLE - 별도 테이블로 관리
+```
+
+### @Column
+컬럼 속성 지정.
+
+```java
+@Column(nullable = false, length = 1000)
+private String content;
+
+@Column(name = "created_at", updatable = false)
+private LocalDateTime timestamp;
+
+@Column(unique = true)
+private String email;
+```
+
+### @PrePersist / @PreUpdate
+엔티티 저장/수정 전 자동 실행되는 콜백.
+
+```java
+@PrePersist
+protected void onCreate() {
+    timestamp = LocalDateTime.now();
+}
+
+@PreUpdate
+protected void onUpdate() {
+    updatedAt = LocalDateTime.now();
+}
+```
+
+---
+
+## 5. Lombok Annotation
+
+### @Data
+`@Getter`, `@Setter`, `@ToString`, `@EqualsAndHashCode`, `@RequiredArgsConstructor` 통합.
+
+```java
+@Data
+public class MessageRequest {
+    private String content;
+}
+```
+
+### @NoArgsConstructor / @AllArgsConstructor
+기본 생성자 / 모든 필드 생성자 자동 생성.
+
+```java
+@NoArgsConstructor   // public Message() {}
+@AllArgsConstructor  // public Message(Long id, String content, ...) {}
+public class Message { }
+```
+
+### @RequiredArgsConstructor (추가 추천)
+`final` 필드만 포함하는 생성자 생성. 생성자 주입에 활용.
+
+```java
+@Service
+@RequiredArgsConstructor
+public class MessageService {
+    private final MessageRepository messageRepository;  // 자동 주입
+}
+```
+
+### @Builder (추가 추천)
+빌더 패턴 자동 생성.
+
+```java
+@Builder
+public class Message { }
+
+// 사용:
+Message msg = Message.builder()
+    .content("Hello")
+    .timestamp(LocalDateTime.now())
+    .build();
+```
+
+---
+
+## 6. Validation Annotation
+
+### @Valid
+컨트롤러에서 요청 객체 검증 활성화.
+
+```java
+@PostMapping("/messages")
+public ResponseEntity<Message> createMessage(@Valid @RequestBody MessageRequest request) { }
+```
+
+### @NotBlank / @NotNull / @NotEmpty
+- `@NotBlank`: null, 빈 문자열, 공백만 있는 문자열 불가
+- `@NotNull`: null만 불가
+- `@NotEmpty`: null, 빈 문자열 불가
+
+```java
+@NotBlank(message = "메시지 내용은 필수입니다")
+private String content;
+
+@NotNull(message = "ID는 필수입니다")
+private Long userId;
+```
+
+### 기타 유용한 Validation (추가 추천)
+
+```java
+@Email(message = "유효한 이메일 형식이 아닙니다")
+private String email;
+
+@Size(min = 2, max = 50, message = "이름은 2~50자 사이여야 합니다")
+private String name;
+
+@Min(value = 0, message = "나이는 0 이상이어야 합니다")
+@Max(value = 150, message = "나이는 150 이하여야 합니다")
+private Integer age;
+
+@Pattern(regexp = "^010-\\d{4}-\\d{4}$", message = "올바른 전화번호 형식이 아닙니다")
+private String phone;
+```
+
+---
+
+## 실무 팁
+
+1. **생성자 주입 권장**: `@Autowired` 필드 주입보다 `@RequiredArgsConstructor` + `final` 필드 조합 권장
+2. **읽기 전용 트랜잭션**: 조회 메서드는 `@Transactional(readOnly = true)` 사용
+3. **Entity에 @Data 주의**: 순환 참조 문제로 `@Getter`, `@Setter` 개별 사용 권장
+4. **Validation 메시지**: 사용자 친화적인 에러 메시지 작성
