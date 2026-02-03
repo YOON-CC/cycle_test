@@ -9,6 +9,48 @@ export const apiClient = axios.create({
   },
 })
 
+// 요청 인터셉터: Access Token 자동 첨부
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    console.log('🔑 Request Interceptor:', {
+      url: config.url,
+      hasToken: !!token,
+      token: token ? `${token.substring(0, 20)}...` : 'null'
+    });
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// 응답 인터셉터: 401 에러 시 로그인 페이지로
+apiClient.interceptors.response.use(
+  (response) => {
+    console.log('✅ Response Success:', {
+      url: response.config.url,
+      status: response.status
+    });
+    return response;
+  },
+  (error) => {
+    console.error('❌ Response Error:', {
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.message
+    });
+    if (error.response?.status === 401) {
+      localStorage.removeItem('accessToken');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface Message {
   id: number
   content: string

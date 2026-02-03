@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(curl:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImlhdCI6MTc3MDEyMjk1MSwiZXhwIjoxNzcwMjA5MzUxfQ.tmPtvozRKUwyxUBwFIK1d2L8OAwtvs7Sx4s0NSLWG71YbxEi7LfDFKri08cLB7xn-MrcY1DEiHNY3-nlsYWDCA\")",
+      "Bash(__NEW_LINE_024d5ec28ac105fd__ curl -X GET http://localhost:8080/api/messages -H \"Authorization: Bearer $TOKEN\" -v)",
+      "Bash(__NEW_LINE_9fa5e8f2df0f778b__ curl -X GET http://localhost:8080/api/messages -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(docker-compose restart:*)"
+    ]
+  }
+}
